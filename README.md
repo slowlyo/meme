@@ -27,7 +27,7 @@
 
 ```bash
 docker run -d \
-  --name doutu-web \
+  --name meme \
   --restart unless-stopped \
   -p 23333:23333 \
   -v $(pwd)/.config.json:/app/.config.json \
@@ -40,9 +40,9 @@ docker run -d \
 version: '3.8'
 
 services:
-  doutu-web:
+  meme:
     image: ghcr.io/slowlyo/meme:latest
-    container_name: doutu-web
+    container_name: meme
     restart: unless-stopped
     ports:
       - "23333:23333"
