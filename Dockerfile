@@ -33,5 +33,5 @@ ENV TZ=Asia/Shanghai
 # 暴露不常用的表情包端口
 EXPOSE 23333
 
-# 容器启动命令：监听所有网络接口，不唤起宿主机桌面浏览器
-ENTRYPOINT ["/app/web", "-host", "0.0.0.0", "-no-browser"]
+# 容器启动命令：监听所有网络接口的 23333 端口，不唤起宿主机桌面浏览器
+ENTRYPOINT ["/app/web", "-host", "0.0.0.0", "-port", "23333", "-no-browser"]

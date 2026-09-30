@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -36,8 +37,16 @@ func openBrowser(url string) {
 }
 
 func main() {
+	// 读取默认端口，优先从环境变量 PORT 读取，缺省使用不常用的 23333 端口
+	defaultPort := 23333
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		if p, err := strconv.Atoi(envPort); err == nil && p > 0 {
+			defaultPort = p
+		}
+	}
+
 	// 定义命令行配置项
-	port := flag.Int("port", 8080, "Web 服务监听端口")
+	port := flag.Int("port", defaultPort, "Web 服务监听端口")
 	host := flag.String("host", "0.0.0.0", "Web 服务监听地址")
 	noBrowser := flag.Bool("no-browser", false, "启动后不自动在浏览器中打开")
 
