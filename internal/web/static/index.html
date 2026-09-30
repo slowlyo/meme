@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>表情包搜索</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              50: '#fafafa',
+              100: '#f4f4f5',
+              200: '#e4e4e7',
+              300: '#d4d4d8',
+              400: '#a1a1aa',
+              500: '#71717a',
+              600: '#52525b',
+              700: '#3f3f46',
+              800: '#27272a',
+              900: '#18181b',
+              950: '#09090b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script>
+    // 自适应系统暗色模式
+    (function() {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+</head>
+<body class="bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 min-h-screen flex flex-col font-sans antialiased transition-colors duration-200">
+  <div id="app" class="max-w-6xl w-full mx-auto px-4 py-8 flex-1 flex flex-col" v-cloak>
+    <!-- 顶部导航 -->
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">表情包搜索</h1>
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">流式聚合检索 • 单击复制图片 • 双击新标签打开</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- 主题切换按钮 -->
+        <button 
+          @click="toggleTheme" 
+          type="button"
+          class="inline-flex items-center justify-center w-9 h-9 bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-700 dark:text-zinc-300 shadow-sm transition-colors"
+          :title="isDark ? '切换至亮色模式' : '切换至暗色模式'"
+        >
+          <!-- 月亮图标 (暗色态展示) -->
+          <svg v-if="isDark" class="w-4 h-4 text-zinc-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+          <!-- 太阳图标 (亮色态展示) -->
+          <svg v-else class="w-4 h-4 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+          </svg>
+        </button>
+
+        <!-- 数据源配置按钮 -->
+        <button 
+          @click="openConfigModal" 
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-700 dark:text-zinc-300 shadow-sm transition-colors"
+        >
+          <svg class="w-4 h-4 text-zinc-500 dark:text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span>数据源配置</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 检索主体卡片 -->
+    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm mb-6 transition-colors">
+      <form @submit.prevent="submitSearch(1)" class="flex gap-2.5">
+        <div class="relative flex-1">
+          <svg class="absolute left-4 top-3.5 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input 
+            v-model="keyword" 
+            type="text" 
+            placeholder="输入关键词，回车即搜..." 
+            class="w-full h-12 pl-11 pr-10 bg-zinc-50 dark:bg-zinc-800/80 focus:bg-white dark:focus:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/80 focus:border-zinc-900 dark:focus:border-zinc-500 rounded-2xl text-sm outline-none text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 transition-colors"
+            autofocus
+          />
+          <button 
+            v-if="keyword" 
+            type="button" 
+            @click="keyword = ''; $refs.input?.focus()" 
+            class="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+        <button 
+          type="submit" 
+          :disabled="loading" 
+          class="h-12 px-7 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 disabled:opacity-50 text-white rounded-2xl text-sm font-medium transition-colors inline-flex items-center gap-2 shadow-sm"
+        >
+          <svg v-if="loading" class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+          </svg>
+          <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <span>搜索</span>
+        </button>
+      </form>
+
+      <!-- 热门关键词 -->
+      <div class="flex items-center gap-2 mt-4 flex-wrap text-xs text-zinc-500 dark:text-zinc-400">
+        <span class="text-zinc-400 dark:text-zinc-500">热搜:</span>
+        <button 
+          v-for="word in hotwords" 
+          :key="word" 
+          @click="quickSearch(word)" 
+          type="button" 
+          class="px-3 py-1 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-full transition-colors"
+        >
+          {{ word }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 结果栏与源切换 Tabs -->
+    <div v-if="hasSearched || loading" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+      <!-- 来源切换 Segmented Tabs -->
+      <div class="inline-flex p-1 bg-zinc-200/80 dark:bg-zinc-800/80 rounded-2xl text-xs font-medium self-start sm:self-auto overflow-x-auto max-w-full">
+        <!-- 全部结果 -->
+        <button 
+          @click="activeSource = 'all'" 
+          type="button" 
+          :class="[
+            'px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5',
+            activeSource === 'all' 
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm font-semibold' 
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+          ]"
+        >
+          <span>全部</span>
+          <span 
+            class="text-[11px] px-2 py-0.5 rounded-full" 
+            :class="activeSource === 'all' ? 'bg-zinc-100 dark:bg-zinc-600 text-zinc-800 dark:text-zinc-100' : 'bg-zinc-300/60 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-400'"
+          >
+            {{ memes.length }}
+          </span>
+        </button>
+
+        <!-- 各已启用源 -->
+        <button 
+          v-for="s in enabledSources" 
+          :key="s.id" 
+          @click="activeSource = s.id" 
+          type="button" 
+          :class="[
+            'px-4 py-2 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5',
+            activeSource === s.id 
+              ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm font-semibold' 
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+          ]"
+        >
+          <span>{{ s.name }}</span>
+          <span 
+            class="text-[11px] px-2 py-0.5 rounded-full"
+            :class="[
+              activeSource === s.id ? 'bg-zinc-100 dark:bg-zinc-600 text-zinc-800 dark:text-zinc-100' : 'bg-zinc-300/60 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-400',
+              sourceErrors[s.id] ? 'text-red-600 dark:text-red-400 font-semibold' : ''
+            ]"
+          >
+            {{ sourceErrors[s.id] ? '异常' : getSourceCount(s.id) }}
+          </span>
+        </button>
+
+        <!-- 未配置的源（点击直接弹出配置） -->
+        <button 
+          v-for="s in unconfiguredSources" 
+          :key="s.id" 
+          @click="openConfigModal" 
+          type="button" 
+          class="px-3 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors whitespace-nowrap flex items-center gap-1.5 text-[11px]"
+          :title="s.config_hint"
+        >
+          <span>{{ s.name }}</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-300/70 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300">未就绪</span>
+        </button>
+      </div>
+
+      <!-- 搜索耗时与状态信息 (流式进行中显示加载提示) -->
+      <div class="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-2">
+        <span v-if="loading" class="inline-flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300">
+          <svg class="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+          </svg>
+          <span>流式检索中...</span>
+        </span>
+        <span>展示 {{ displayedMemes.length }} / {{ totalCount }} 个表情包</span>
+        <span v-if="durationMs > 0">•</span>
+        <span v-if="durationMs > 0">耗时 {{ durationMs }}ms</span>
+      </div>
+    </div>
+
+    <!-- 骨架屏加载 (仅在首批数据到达前显示) -->
+    <div v-if="loading && memes.length === 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+      <div v-for="i in 12" :key="i" class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden animate-pulse aspect-square">
+        <div class="w-full h-full bg-zinc-200 dark:bg-zinc-800"></div>
+      </div>
+    </div>
+
+    <!-- 空结果状态 -->
+    <div v-else-if="hasSearched && !loading && displayedMemes.length === 0" class="text-center py-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl">
+      <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
+        {{ activeSource === 'all' ? '未找到相关表情包' : '当前数据源下无表情包' }}
+      </p>
+      <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+        {{ activeSource === 'all' ? '建议更换关键词重新检索' : '可切换到其他数据源或查看全部结果' }}
+      </p>
+      <button 
+        v-if="activeSource !== 'all'" 
+        @click="activeSource = 'all'" 
+        class="px-4 py-2 text-xs bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-xl transition-colors"
+      >
+        查看全部结果
+      </button>
+    </div>
+
+    <!-- 表情包展示列表：只展示图片，悬浮来源 tag，卡片内置复制提示 -->
+    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+      <div 
+        v-for="(item, idx) in displayedMemes" 
+        :key="item.url" 
+        @click="handleCardClick(item)"
+        class="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 rounded-2xl overflow-hidden aspect-square flex items-center justify-center p-2.5 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 select-none"
+        :title="item.title + ' (单击复制，双击新标签打开)'"
+      >
+        <!-- 悬浮来源 Tag (中文展示) -->
+        <span class="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-black/60 dark:bg-black/75 backdrop-blur-md text-white/95 select-none pointer-events-none z-10 shadow-sm">
+          {{ getPlatformName(item.platform) }}
+        </span>
+
+        <!-- 表情包图片 -->
+        <img 
+          :src="item.url" 
+          :alt="item.title"
+          loading="lazy"
+          @error="handleImgError($event, item.url)"
+          class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-200 pointer-events-none"
+        />
+
+        <!-- 图片上的复制状态浮层提示 (正在复制 / 已复制) -->
+        <div 
+          v-if="copyStates[item.url]" 
+          class="absolute inset-0 bg-black/45 backdrop-blur-[2px] rounded-2xl flex items-center justify-center z-20 pointer-events-none transition-all duration-200"
+        >
+          <div class="px-3.5 py-1.5 rounded-full bg-zinc-900/90 dark:bg-zinc-800/95 text-white text-xs font-medium flex items-center gap-1.5 shadow-2xl border border-white/15">
+            <!-- 正在复制 loading 转圈 -->
+            <svg v-if="copyStates[item.url] === 'copying'" class="animate-spin w-3.5 h-3.5 text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+              <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+            </svg>
+            <!-- 已复制对勾 -->
+            <svg v-else class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>{{ copyStates[item.url] === 'copying' ? '正在复制...' : '已复制' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分页条 -->
+    <div v-if="memes.length > 0 && !loading" class="flex items-center justify-center gap-3 mt-8">
+      <button 
+        @click="changePage(-1)" 
+        :disabled="currentPage <= 1 || loading" 
+        class="h-10 px-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-medium transition-colors shadow-sm"
+      >
+        上一页
+      </button>
+      <span class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">第 {{ currentPage }} 页</span>
+      <button 
+        @click="changePage(1)" 
+        :disabled="memes.length < pageSize || loading" 
+        class="h-10 px-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 disabled:opacity-40 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-medium transition-colors shadow-sm"
+      >
+        下一页
+      </button>
+    </div>
+
+    <!-- 数据源配置模态框 -->
+    <div 
+      v-if="configModalOpen" 
+      @click.self="configModalOpen = false" 
+      class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+    >
+      <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col transition-colors">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800">
+          <div>
+            <h2 class="text-base font-bold text-zinc-900 dark:text-white">数据源配置</h2>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">配置将自动保存到本地，下次启动依然生效</p>
+          </div>
+          <button @click="configModalOpen = false" class="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+          <!-- 抖音凭证配置 -->
+          <div class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-zinc-800 dark:text-zinc-200">抖音凭证 (SessionID / Cookie)</label>
+              <span class="text-[11px] text-zinc-400 dark:text-zinc-500">热重载生效</span>
+            </div>
+
+            <!-- 获取指引卡片 -->
+            <div class="p-3.5 bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 rounded-2xl flex flex-col gap-2 text-xs text-zinc-600 dark:text-zinc-300">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-zinc-800 dark:text-zinc-200">推荐获取方式</span>
+                <span class="text-[10px] text-zinc-500 dark:text-zinc-400 bg-zinc-200/70 dark:bg-zinc-700 px-2 py-0.5 rounded-full">系统支持自动解析</span>
+              </div>
+              <p class="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                sessionid 是 HttpOnly 安全凭证，禁止 JS 访问，且新版浏览器隐藏了地址栏明文。请通过以下两种方式之一获取：
+              </p>
+              <div class="pt-1.5 flex flex-col gap-1.5 text-[11px] border-t border-zinc-200/60 dark:border-zinc-700/60">
+                <div class="flex items-start gap-1.5">
+                  <span class="text-zinc-400 font-mono">1.</span>
+                  <span><strong>直接粘贴 cURL (最推荐)：</strong>登录 douyin.com ➔ 按 F12 ➔ 切换到 Network(网络) 刷新 ➔ 随便右键一个请求 ➔ <strong>Copy as cURL</strong> ➔ 直接全量粘贴到下方输入框（后端自动提取，无需手动找）。</span>
+                </div>
+                <div class="flex items-start gap-1.5">
+                  <span class="text-zinc-400 font-mono">2.</span>
+                  <span><strong>Application 面板：</strong>F12 ➔ Application(应用程序) ➔ 左侧 Cookies ➔ douyin.com ➔ 搜索 <code class="font-mono bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded">sessionid</code> 复制 Value。</span>
+                </div>
+              </div>
+            </div>
+
+            <textarea 
+              v-model="configForm.douyin_cookie" 
+              rows="3" 
+              placeholder="可直接粘贴整段 cURL 命令、32 位 sessionid 或完整 Cookie 字符串" 
+              class="w-full p-3 bg-zinc-50 dark:bg-zinc-800 focus:bg-white dark:focus:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-zinc-900 dark:focus:border-zinc-400 rounded-2xl text-xs font-mono outline-none text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 transition-colors"
+            ></textarea>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
+          <button 
+            @click="configModalOpen = false" 
+            type="button" 
+            class="px-4 py-2 text-xs font-medium border border-zinc-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 rounded-xl text-zinc-700 dark:text-zinc-300 transition-colors"
+          >
+            取消
+          </button>
+          <button 
+            @click="saveConfig" 
+            :disabled="savingConfig" 
+            type="button" 
+            class="px-5 py-2 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 disabled:opacity-50 text-white rounded-xl shadow-sm transition-colors"
+          >
+            {{ savingConfig ? '正在保存...' : '保存并生效' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const keyword = ref('熊猫头');
+        const hotwords = ['熊猫头', '猫咪', '问号', '打工人', '柴犬', '开心'];
+        const allSources = ref([]);
+        const activeSource = ref('all');
+        const memes = ref([]);
+        const loading = ref(false);
+        const hasSearched = ref(false);
+        const currentPage = ref(1);
+        const pageSize = 48;
+        const totalCount = ref(0);
+        const durationMs = ref(0);
+        const successSources = ref([]);
+        const sourceErrors = ref({});
+
+        // 暗色主题状态
+        const isDark = ref(document.documentElement.classList.contains('dark'));
+        const toggleTheme = () => {
+          isDark.value = !isDark.value;
+          if (isDark.value) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+          }
+        };
+
+        // 图片卡片内部复制提示状态：{ [url]: 'copying' | 'copied' }
+        const copyStates = reactive({});
+
+        const configModalOpen = ref(false);
+        const savingConfig = ref(false);
+        const configForm = reactive({
+          douyin_cookie: ''
+        });
+        const scriptCopied = ref(false);
+
+        // 复制代码到剪贴板用于在抖音控制台一键抓取 sessionid
+        const copyScript = async () => {
+          const code = "copy(document.cookie.match(/sessionid=([^;]+)/)?.[1] || '');";
+          try {
+            await navigator.clipboard.writeText(code);
+            scriptCopied.value = true;
+            setTimeout(() => {
+              scriptCopied.value = false;
+            }, 2000);
+          } catch (e) {
+            console.error('复制脚本失败', e);
+          }
+        };
+
+        let clickTimer = null;
+        let seenUrls = new Set();
+
+        // 已启用与未启用的数据源
+        const enabledSources = computed(() => allSources.value.filter(s => s.enabled));
+        const unconfiguredSources = computed(() => allSources.value.filter(s => !s.enabled));
+
+        // 过滤展示当前选中源的表情包 (支持秒切)
+        const displayedMemes = computed(() => {
+          if (activeSource.value === 'all') {
+            return memes.value;
+          }
+          return memes.value.filter(m => m.platform === activeSource.value);
+        });
+
+        // 获取特定源匹配到的表情包数量
+        const getSourceCount = (sourceId) => {
+          return memes.value.filter(m => m.platform === sourceId).length;
+        };
+
+        // 加载全部数据源列表状态
+        const loadSources = async () => {
+          try {
+            const res = await fetch('/api/sources');
+            if (!res.ok) throw new Error('Failed to fetch sources');
+            const data = await res.json();
+            allSources.value = data;
+          } catch (err) {
+            console.error('加载数据源失败', err);
+          }
+        };
+
+        // 打开配置弹窗
+        const openConfigModal = async () => {
+          try {
+            const res = await fetch('/api/config');
+            if (res.ok) {
+              const data = await res.json();
+              configForm.douyin_cookie = data.douyin_cookie || '';
+            }
+          } catch (e) {
+            console.error(e);
+          }
+          configModalOpen.value = true;
+        };
+
+        // 保存配置并热更新
+        const saveConfig = async () => {
+          savingConfig.value = true;
+          try {
+            const res = await fetch('/api/config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                douyin_cookie: configForm.douyin_cookie
+              })
+            });
+
+            if (!res.ok) throw new Error('保存配置失败');
+            const data = await res.json();
+            configModalOpen.value = false;
+            if (data.sources) {
+              allSources.value = data.sources;
+            } else {
+              await loadSources();
+            }
+          } catch (err) {
+            console.error('保存失败', err);
+          } finally {
+            savingConfig.value = false;
+          }
+        };
+
+        // 提交流式搜索 (不阻塞，各源数据逐个实时推送渲染)
+        const submitSearch = async (page = 1) => {
+          const kw = keyword.value.trim();
+          if (!kw) return;
+
+          currentPage.value = page;
+          loading.value = true;
+          hasSearched.value = true;
+          memes.value = [];
+          seenUrls.clear();
+          successSources.value = [];
+          sourceErrors.value = {};
+          totalCount.value = 0;
+          durationMs.value = 0;
+
+          const params = new URLSearchParams();
+          params.set('keyword', kw);
+          params.set('page', page);
+          params.set('limit', pageSize);
+          params.set('stream', '1');
+
+          try {
+            const res = await fetch(`/api/search?${params.toString()}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const parts = buffer.split('\n\n');
+              buffer = parts.pop(); // 保留未完整的块
+
+              for (const part of parts) {
+                const trimmed = part.trim();
+                if (!trimmed) continue;
+
+                let eventType = 'message';
+                let dataStr = '';
+
+                const lines = trimmed.split('\n');
+                for (const line of lines) {
+                  if (line.startsWith('event:')) {
+                    eventType = line.substring(6).trim();
+                  } else if (line.startsWith('data:')) {
+                    dataStr = line.substring(5).trim();
+                  }
+                }
+
+                if (dataStr) {
+                  try {
+                    const parsed = JSON.parse(dataStr);
+                    if (eventType === 'source') {
+                      if (parsed.error) {
+                        sourceErrors.value[parsed.source_id] = parsed.error;
+                      }
+                      if (parsed.memes && parsed.memes.length > 0) {
+                        if (!successSources.value.includes(parsed.source_id)) {
+                          successSources.value.push(parsed.source_id);
+                        }
+                        // 去重流式追加
+                        for (const m of parsed.memes) {
+                          if (!seenUrls.has(m.url)) {
+                            seenUrls.add(m.url);
+                            memes.value.push(m);
+                          }
+                        }
+                        totalCount.value = memes.value.length;
+                      }
+                    } else if (eventType === 'done') {
+                      durationMs.value = parsed.duration_ms || 0;
+                    }
+                  } catch (e) {
+                    console.error('SSE 解析异常', e);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error('搜索异常', err);
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        // 热词快速检索
+        const quickSearch = (kw) => {
+          keyword.value = kw;
+          activeSource.value = 'all';
+          submitSearch(1);
+        };
+
+        // 翻页
+        const changePage = (delta) => {
+          const target = currentPage.value + delta;
+          if (target >= 1) {
+            submitSearch(target);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        };
+
+        // 图片加载失败自动切换至内置代理
+        const handleImgError = (event, rawURL) => {
+          const img = event.target;
+          if (!img.dataset.proxied) {
+            img.dataset.proxied = 'true';
+            img.src = `/api/proxy?url=${encodeURIComponent(rawURL)}`;
+          } else {
+            img.style.display = 'none';
+          }
+        };
+
+        // 处理卡片点击与双击：单击复制图片，双击在新标签页打开原图
+        const handleCardClick = (item) => {
+          if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = null;
+            // 双击：在新标签页打开
+            window.open(item.url, '_blank');
+            return;
+          }
+          clickTimer = setTimeout(() => {
+            clickTimer = null;
+            // 单击：复制图片并在当前卡片展示提示
+            copyImage(item.url);
+          }, 220);
+        };
+
+        // 复制图片到剪贴板，提示直接作用在被点击卡片内部
+        const copyImage = async (url) => {
+          copyStates[url] = 'copying';
+          try {
+            let resp;
+            try {
+              resp = await fetch(url, { mode: 'cors' });
+              if (!resp.ok) throw new Error('fail');
+            } catch {
+              resp = await fetch(`/api/proxy?url=${encodeURIComponent(url)}`);
+            }
+
+            const blob = await resp.blob();
+            // 现代浏览器剪贴板要求 PNG 格式
+            const pngBlob = await new Promise((resolve, reject) => {
+              if (blob.type === 'image/png') return resolve(blob);
+              const img = new Image();
+              const objURL = URL.createObjectURL(blob);
+              img.onload = () => {
+                URL.revokeObjectURL(objURL);
+                const cvs = document.createElement('canvas');
+                cvs.width = img.naturalWidth || img.width;
+                cvs.height = img.naturalHeight || img.height;
+                const ctx = cvs.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                cvs.toBlob(b => b ? resolve(b) : reject(new Error('canvas error')), 'image/png');
+              };
+              img.onerror = () => {
+                URL.revokeObjectURL(objURL);
+                reject(new Error('image decode error'));
+              };
+              img.src = objURL;
+            });
+
+            if (navigator.clipboard?.write) {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': pngBlob })
+              ]);
+              copyStates[url] = 'copied';
+            } else {
+              throw new Error('浏览器不支持写入图片');
+            }
+          } catch (e) {
+            console.warn('图片复制失败，降级复制链接', e);
+            try {
+              await navigator.clipboard.writeText(url);
+              copyStates[url] = 'copied';
+            } catch {
+              delete copyStates[url];
+            }
+          } finally {
+            // 1.2 秒后自动恢复原卡片状态
+            setTimeout(() => {
+              delete copyStates[url];
+            }, 1200);
+          }
+        };
+
+        const platformNames = {
+          doutula: '斗图啦',
+          sougou: '搜狗',
+          pdan: '胖哒',
+          douyin: '抖音'
+        };
+
+        const getPlatformName = (platform) => {
+          if (!platform) return '未知';
+          const match = allSources.value.find(s => s.id === platform);
+          if (match && match.name) return match.name;
+          return platformNames[platform] || platform;
+        };
+
+        onMounted(async () => {
+          await loadSources();
+          submitSearch(1);
+
+          // 监听系统主题变化
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+              isDark.value = e.matches;
+              if (e.matches) {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+            }
+          });
+        });
+
+        return {
+          keyword,
+          hotwords,
+          allSources,
+          activeSource,
+          enabledSources,
+          unconfiguredSources,
+          memes,
+          displayedMemes,
+          loading,
+          hasSearched,
+          currentPage,
+          pageSize,
+          totalCount,
+          durationMs,
+          successSources,
+          sourceErrors,
+          configModalOpen,
+          savingConfig,
+          configForm,
+          scriptCopied,
+          copyScript,
+          copyStates,
+          isDark,
+          toggleTheme,
+          getSourceCount,
+          getPlatformName,
+          openConfigModal,
+          saveConfig,
+          submitSearch,
+          quickSearch,
+          changePage,
+          handleImgError,
+          handleCardClick
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

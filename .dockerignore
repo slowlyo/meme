@@ -1,0 +1,10 @@
+build/
+bin/
+.config.json
+.meme-config.json
+.git/
+.github/
+.vscode/
+.idea/
+*.local.json
+.env*
